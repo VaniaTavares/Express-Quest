@@ -1,7 +1,7 @@
 const connection = require("./db-config");
 const express = require("express");
 
-const movieRouter = express.Router({ mergeParams: true });
+const movieRouter = express.Router();
 
 movieRouter.use(express.json());
 
