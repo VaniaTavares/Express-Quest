@@ -15,7 +15,11 @@
   "dependencies": {
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+<<<<<<< HEAD
     "mysql2": "^2.3.3-rc.0"
+=======
+    "mysql2": "^2.2.5"
+>>>>>>> 0fe35463b6e3c6fcd61af0829e633a475cc82394
   },
   "devDependencies": {
     "nodemon": "^2.0.4"
