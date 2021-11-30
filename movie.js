@@ -69,43 +69,45 @@ movieRouter.get("/:id", (req, res) => {
 
 movieRouter.post("/", (req, res) => {
   const { title, director, year, color, duration } = req.body;
+  let numericYear = parseInt(year);
   const db = connection.promise();
+  let errors = [];
 
-  const hardValidationString = (arg) => {
-    if (!arg)
-      errors.push({ field: `${arg}`, message: "This field is required" });
-    else if (arg.length >= 255 || typeof arg !== "string") {
-      console.log("+++++++++++++++ strings");
-      errors.push({
-        field: `${arg}`,
-        message: "Should contain less than 255 alpha-numeric characters",
-      });
-    } else return;
-  };
-
-  const hardValidationNumeric = (arg, value) => {
-    if (!arg)
-      errors.push({ field: `${arg}`, message: "This field is required" });
-    else if (arg <= value || typeof arg !== "number") {
-      console.log("+++++++++++++++ numberss");
-      errors.push({
-        field: `${arg}`,
-        message: `Should be a number bigger than ${value}`,
-      });
-    } else return;
-  };
-
-  hardValidationString(title);
-  hardValidationString(director);
-  hardValidationNumeric(year, 1887);
-  hardValidationNumeric(duration, 0);
+  if (!title)
+    errors.push({ field: `title`, message: "This field is required" });
+  else if (title.length >= 255)
+    errors.push({
+      field: `title`,
+      message: "Should contain less than 255 alpha-numeric characters",
+    });
+  if (!director)
+    errors.push({ field: `director`, message: "This field is required" });
+  else if (director.length >= 255)
+    errors.push({
+      field: `director`,
+      message: "Should contain less than 255 alpha-numeric characters",
+    });
+  if (!year) errors.push({ field: `year`, message: "This field is required" });
+  else if (isNaN(year) || numericYear <= 1887)
+    errors.push({
+      field: `year`,
+      message:
+        "This field needs to be a string with numeric value bigger than 1887",
+    });
+  if (!duration)
+    errors.push({ field: `duration`, message: "This field is required" });
+  else if (duration <= 0)
+    errors.push({
+      field: `duration`,
+      message: "This field needs to be bigger than 0",
+    });
   if (!color || color > 1)
     errors.push({
       field: "color",
       message: `Required with value of true or false (1 or 0)`,
     });
 
-  if (error.length) res.status(422).json({ validationErrors: errors });
+  if (errors.length) res.status(422).json({ validationErrors: errors });
   else {
     db.query(
       "INSERT INTO movies(title, director, year, color, duration) VALUES (?, ?, ?, ?, ?)",
@@ -142,37 +144,60 @@ movieRouter.post("/", (req, res) => {
 */
 
 movieRouter.put("/:id", (req, res) => {
+  const { title, director, year, color, duration } = req.body;
+  let numericYear = parseInt(year);
   const movieId = req.params.id;
 
-  connection.query(
-    "SELECT * FROM movies WHERE id = ?",
-    [movieId],
-    (err, selectedResult) => {
-      if (err) {
-        res.status(500).send("Error!");
-      } else {
-        const dbresult = selectedResult[0];
-        if (dbresult) {
-          connection.query(
-            "UPDATE movies SET ? WHERE id = ?",
-            [req.body, movieId],
-            (err) => {
-              if (err) {
-                res.status(500).send("Error on retrieval");
-              } else {
-                const updatedMovie = { ...dbresult, ...req.body };
-                res.json(updatedMovie);
-              }
-            }
-          );
-        } else {
+  const db = connection.promise();
+  let errors = [];
+
+  if (title && title.length >= 255)
+    errors.push({
+      field: `title`,
+      message: "Should contain less than 255 alpha-numeric characters",
+    });
+  if (director && director.length >= 255)
+    errors.push({
+      field: `director`,
+      message: "Should contain less than 255 alpha-numeric characters",
+    });
+  if (year && (isNaN(year) || numericYear <= 1887))
+    errors.push({
+      field: `year`,
+      message:
+        "This field needs to be a string with numeric value bigger than 1887",
+    });
+  if (duration && duration <= 0)
+    errors.push({
+      field: `duration`,
+      message: "This field needs to be bigger than 0",
+    });
+  if (color && color > 1)
+    errors.push({
+      field: "color",
+      message: `Required with value of true or false (1 or 0)`,
+    });
+
+  if (errors.length) res.status(422).json({ validationErrors: errors });
+  else {
+    db.query("SELECT * FROM movies WHERE id = ?", [movieId])
+      .then(([selectedResult]) => {
+        if (!selectedResult) return Promise.reject("NO_MOVIE");
+        return db.query("UPDATE movies SET ? WHERE id = ?", [
+          req.body,
+          movieId,
+        ]);
+      })
+      .then((updatedResult) => console.log(updatedResult, selectedResult))
+      .catch((err) => {
+        console.log(err);
+        if (err === "NO_MOVIE")
           res
             .status(404)
             .send(`Movie id ${movieId} is not valid. Movie not found!`);
-        }
-      }
-    }
-  );
+        else res.status(500).send("Error!");
+      });
+  }
 });
 
 movieRouter.delete("/:id", (req, res) => {
