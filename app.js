@@ -153,11 +153,18 @@ app.post("/api/users", (req, res) => {
 app.put("/api/users/:id", (req, res) => {
   const userId = req.params.id;
   const numericId = parseInt(userId);
+
   let { firstname, lastname, email, city, language } = req.body;
+  let existingUser, validationErrors;
+
   const db = connection.promise();
-  let existingUser = null;
-  let validationErrors = null;
-  db.query("SELECT id, email FROM users WHERE email=?;", [email])
+
+  db.query("SELECT * FROM users WHERE id = ?", [userId])
+    .then(([selectedResult]) => {
+      if (!selectedResult[0]) return Promise.reject("RECORD_NOT_FOUND");
+      existingUser = selectedResult[0];
+      return db.query("SELECT id, email FROM users WHERE email=?;", [email]);
+    })
     .then(([result]) => {
       if (result[0] && result[0].id !== numericId) {
         return Promise.reject("DUPLICATE_EMAIL");
@@ -173,11 +180,6 @@ app.put("/api/users/:id", (req, res) => {
         { abortEarly: false }
       ).error;
       if (validationErrors) return Promise.reject("INVALID_DATA");
-      return db.query("SELECT * FROM users WHERE id = ?", [userId]);
-    })
-    .then(([results]) => {
-      existingUser = results[0];
-      if (!existingUser) return Promise.reject("RECORD_NOT_FOUND");
       return db.query("UPDATE users SET ? WHERE id = ?", [req.body, userId]);
     })
     .then(() => {
