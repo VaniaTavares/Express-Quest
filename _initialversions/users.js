@@ -1,3 +1,5 @@
+//initial file
+
 app.get("/api/users", (req, res) => {
   let sql = "SELECT * FROM users";
   const sqlValues = [];
