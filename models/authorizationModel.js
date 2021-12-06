@@ -3,10 +3,7 @@ const db = connection.promise();
 
 const getUserByEmail = (email) => {
   return db
-    .query(
-      "SELECT firstname, lastname, city, language, hashedPassword FROM users WHERE email= ?;",
-      [email]
-    )
+    .query("SELECT hashedPassword FROM users WHERE email= ?;", [email])
     .then(([results]) => results)
     .catch((err) => {
       console.log(err);

@@ -1,18 +1,18 @@
 const { authModel, usersModel } = require("../models");
 
-const userAuthenticationController = async (req, res) => {
+const userAuthenticationController = (req, res) => {
   const { email, password } = req.body;
 
-  let retrieveHashedPassword;
+  let hashedPassword;
 
   if (email && password) {
     authModel
       .getUserByEmail(email)
-      .then((users) => {
-        if (users.length === 0) return Promise.reject("NO_MATCH");
-        retrieveHashedPassword = users[0].hashedPassword;
+      .then(([users]) => {
+        if (!users) return Promise.reject("NO_MATCH");
+        hashedPassword = users.hashedPassword;
 
-        return usersModel.verifyPassword(password, retrieveHashedPassword);
+        return usersModel.verifyPassword(password, hashedPassword);
       })
       .then((passwordIsCorrect) => {
         if (!passwordIsCorrect) return Promise.reject("NO_MATCH");

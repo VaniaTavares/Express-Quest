@@ -85,6 +85,7 @@ const insertNewUserController = (req, res) => {
         email,
         city,
         language,
+        hashedPassword,
       })
     )
     .catch((err) => {
