@@ -1,5 +1,5 @@
-const Joi = require("joi");
 const { usersModel } = require("../models");
+const { userHelper } = require("../helpers");
 
 const getUsersController = (req, res) => {
   const { language } = req.query;
@@ -23,7 +23,7 @@ const getUserByIdController = (req, res) => {
   usersModel
     .getUserById(userId)
     .then((user) => {
-      if (user.length) res.status(200).json(user[0]);
+      if (user.length) res.status(200).json(user);
       else return Promise.reject("NO_USER");
     })
     .catch((err) => {
@@ -35,59 +35,22 @@ const getUserByIdController = (req, res) => {
 };
 
 const insertNewUserController = (req, res) => {
-  const {
-    firstname,
-    lastname,
-    email,
-    city,
-    language,
-    password,
-    passwordToVerify,
-  } = req.body;
-  let validationErrors, hashedPassword;
+  let validationErrors;
 
   usersModel
-    .validateEmail(email)
+    .validateEmail(req.body.email)
     .then((result) => {
       if (result[0]) return Promise.reject("DUPLICATE_EMAIL");
-
-      validationErrors = Joi.object({
-        email: Joi.string().email().max(255).required(),
-        firstname: Joi.string().max(255).required(),
-        lastname: Joi.string().max(255).required(),
-        city: Joi.string().max(255),
-        language: Joi.string().max(255),
-        password: Joi.string().alphanum().min(8).max(20).required(),
-      }).validate(
-        { firstname, lastname, email, city, language, password },
-        { abortEarly: false }
-      ).error;
+      validationErrors = usersModel.validateUser(req.body);
       if (validationErrors) return Promise.reject("INVALID_DATA");
 
-      return usersModel.hashPassword(password);
+      return userHelper.calculateToken(req.body.email);
     })
-    .then((hashPassword) => {
-      hashedPassword = `${hashPassword}`;
-      return usersModel.insertUser(
-        firstname,
-        lastname,
-        email,
-        city,
-        language,
-        hashedPassword
-      );
+    .then((token) => {
+      req.body.token = token;
+      return usersModel.insertUser(req.body);
     })
-    .then((newUserId) =>
-      res.status(201).json({
-        id: newUserId,
-        firstname,
-        lastname,
-        email,
-        city,
-        language,
-        hashedPassword,
-      })
-    )
+    .then((newUserId) => res.status(201).json(newUserId))
     .catch((err) => {
       console.error(err);
       if (err === "DUPLICATE_EMAIL")
@@ -100,37 +63,33 @@ const insertNewUserController = (req, res) => {
 
 const updateUserController = (req, res) => {
   const userId = req.params.id;
+  let newEmail = req.body.email;
 
-  let { firstname, lastname, email, city, language } = req.body;
   let existingUser, validationErrors;
 
-  usersModel
-    .getUserById(userId)
-    .then((user) => {
-      if (!user.length) return Promise.reject("RECORD_NOT_FOUND");
-      existingUser = user[0];
-      return usersModel.validateEmail(email);
-    })
-    .then((result) => {
-      if (result[0] && result[0].id !== parseInt(userId))
+  Promise.all([
+    usersModel.getUserById(userId),
+    usersModel.validateEmail(newEmail),
+  ])
+    .then(([user, otherUserWithEmail]) => {
+      existingUser = user;
+      if (!existingUser) return Promise.reject("RECORD_NOT_FOUND");
+      if (otherUserWithEmail && otherUserWithEmail.id !== parseInt(userId))
         return Promise.reject("DUPLICATE_EMAIL");
-
-      validationErrors = Joi.object({
-        email: Joi.string().email().max(255),
-        firstname: Joi.string().max(255),
-        lastname: Joi.string().max(255),
-        city: Joi.string().max(255),
-        language: Joi.string().max(255),
-      }).validate(
-        { firstname, lastname, email, city, language },
-        { abortEarly: false }
-      ).error;
+      validationErrors = usersModel.validateUser(req.body, false);
       if (validationErrors) return Promise.reject("INVALID_DATA");
 
+      if (newEmail) return userHelper.calculateToken(newEmail);
+      else return userHelper.calculateToken(existingUser.email);
+    })
+    .then((token) => {
+      req.body.token = token;
       return usersModel.updateUser(req.body, userId);
     })
     .then((user) => {
+      delete req.body.token;
       if (user === 1) res.status(200).json({ ...existingUser, ...req.body });
+      else return Promise.reject("NO_UPDATE");
     })
     .catch((err) => {
       console.error(err);
@@ -138,6 +97,7 @@ const updateUserController = (req, res) => {
         res.status(409).send("Email already in use by other user");
       else if (err === "INVALID_DATA")
         res.status(422).json({ validationErrors });
+      else if (err === "NO_UPDATE") res.status(400).send("No new info");
       else if (err === "RECORD_NOT_FOUND")
         res.status(404).send(`User with id ${userId} not found.`);
       else res.status(500).send("Error updating a user");

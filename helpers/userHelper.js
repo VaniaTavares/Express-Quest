@@ -10,8 +10,4 @@ const calculateToken = (userEmail = "") => {
     .digest("hex");
 };
 
-console.log(calculateToken("vntavares56@gmail.com"));
-console.log(calculateToken("pcp22@gmail.com"));
-console.log(calculateToken("fjlt@gmail.com"));
-
 module.exports = { calculateToken };

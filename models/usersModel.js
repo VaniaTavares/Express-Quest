@@ -1,5 +1,6 @@
 const connection = require("../db-config");
 const db = connection.promise();
+const Joi = require("joi");
 
 const argon2 = require("argon2");
 
@@ -26,6 +27,18 @@ const verifyPassword = (plainPassword, hashedPassword) => {
   return argon2.verify(hashedPassword, plainPassword, hashingOptions);
 };
 
+const validateUser = (data, forCreation = true) => {
+  const presence = forCreation ? "required" : "optional";
+  return Joi.object({
+    email: Joi.string().email().max(255).presence(presence),
+    password: Joi.string().alphanum().min(8).max(50).presence(presence),
+    firstname: Joi.string().max(255).presence(presence),
+    lastname: Joi.string().max(255).presence(presence),
+    city: Joi.string().allow(null, "").max(255),
+    language: Joi.string().allow(null, "").max(255),
+  }).validate(data, { abortEarly: false }).error;
+};
+
 const getUsers = ({ filters: { language } }) => {
   let sql = "SELECT id, firstname, lastname, email, city, language FROM users";
   const sqlValues = [];
@@ -49,27 +62,47 @@ const getUserById = (id) => {
       "SELECT firstname, lastname, email, city, language FROM users WHERE id = ?",
       [id]
     )
-    .then(([results]) => results)
+    .then(([results]) => results[0])
     .catch((err) => {
       console.log(err);
       return err;
     });
 };
 
-const insertUser = (
+const insertUser = ({
   firstname,
   lastname,
-  email,
   city,
   language,
-  hashedPassword
-) => {
-  return db
-    .query(
-      "INSERT INTO `users`(firstname, lastname, email, city, language, hashedPassword) VALUES (?, ?, ?, ?, ?, ?);",
-      [firstname, lastname, email, city, language, hashedPassword]
-    )
-    .then(([{ insertId }]) => insertId)
+  email,
+  password,
+  token,
+}) => {
+  console.log(token, "*++++++++++++++++++++++++");
+  let hashedPassword;
+  return hashPassword(password)
+    .then((treatedPassword) => {
+      hashedPassword = treatedPassword;
+      return db.query("INSERT INTO `users` SET ?;", {
+        firstname,
+        lastname,
+        city,
+        language,
+        email,
+        hashedPassword,
+        token,
+      });
+    })
+    .then(([{ insertId }]) => {
+      return {
+        id: insertId,
+        firstname,
+        lastname,
+        email,
+        city,
+        language,
+      };
+    })
     .catch((err) => {
       console.log(err);
       return err;
@@ -79,7 +112,7 @@ const insertUser = (
 const validateEmail = (email) => {
   return db
     .query("SELECT id, email FROM users WHERE email=?", [email])
-    .then(([results]) => results)
+    .then(([results]) => results[0])
     .catch((err) => {
       console.log(err);
       return err;
@@ -115,4 +148,5 @@ module.exports = {
   deleteUser,
   hashPassword,
   verifyPassword,
+  validateUser,
 };
