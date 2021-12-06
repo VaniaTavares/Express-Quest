@@ -1,4 +1,5 @@
 const { authModel, usersModel } = require("../models");
+const { calculateToken } = require("../helpers");
 
 const userAuthenticationController = (req, res) => {
   const { email, password } = req.body;
@@ -16,11 +17,7 @@ const userAuthenticationController = (req, res) => {
       })
       .then((passwordIsCorrect) => {
         if (!passwordIsCorrect) return Promise.reject("NO_MATCH");
-        res
-          .status(200)
-          .send(
-            "there is a user with the same email and a matching password in DB"
-          );
+        res.status(200).send(calculateToken(email));
       })
       .catch((err) => {
         if (err === "NO_MATCH") res.status(401).send("Invalid credentials!");
