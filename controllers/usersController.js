@@ -35,8 +35,16 @@ const getUserByIdController = (req, res) => {
 };
 
 const insertNewUserController = (req, res) => {
-  const { firstname, lastname, email, city, language } = req.body;
-  let validationErrors = null;
+  const {
+    firstname,
+    lastname,
+    email,
+    city,
+    language,
+    password,
+    passwordToVerify,
+  } = req.body;
+  let validationErrors, hashedPassword;
 
   usersModel
     .validateEmail(email)
@@ -49,18 +57,35 @@ const insertNewUserController = (req, res) => {
         lastname: Joi.string().max(255).required(),
         city: Joi.string().max(255),
         language: Joi.string().max(255),
+        password: Joi.string().alphanum().min(8).max(20).required(),
       }).validate(
-        { firstname, lastname, email, city, language },
+        { firstname, lastname, email, city, language, password },
         { abortEarly: false }
       ).error;
       if (validationErrors) return Promise.reject("INVALID_DATA");
 
-      return usersModel.insertUser(firstname, lastname, email, city, language);
+      return usersModel.hashPassword(password);
+    })
+    .then((hashPassword) => {
+      hashedPassword = `${hashPassword}`;
+      return usersModel.insertUser(
+        firstname,
+        lastname,
+        email,
+        city,
+        language,
+        hashedPassword
+      );
     })
     .then((newUserId) =>
-      res
-        .status(201)
-        .json({ id: newUserId, firstname, lastname, email, city, language })
+      res.status(201).json({
+        id: newUserId,
+        firstname,
+        lastname,
+        email,
+        city,
+        language,
+      })
     )
     .catch((err) => {
       console.error(err);
@@ -134,10 +159,45 @@ const deleteUserController = (req, res) => {
     });
 };
 
+const userAuthenticationController = (req, res) => {
+  const { email, password } = req.body;
+
+  let retrieveHashedPassword;
+
+  if (email && password) {
+    usersModel
+      .getUserByEmail(email)
+      .then((users) => {
+        if (users.length === 0) return Promise.reject("RECORD_NOT_FOUND");
+        console.log(users[0]);
+        retrieveHashedPassword = users[0].hashedPassword;
+
+        return usersModel.verifyPassword(password, retrieveHashedPassword);
+      })
+      .then((passwordIsCorrect) => {
+        if (!passwordIsCorrect) return Promise.reject("NO_MATCH");
+        res
+          .status(200)
+          .send(
+            "there is a user with the same email and a matching password in DB"
+          );
+      })
+      .catch((err) => {
+        if (err === "RECORD_NOT_FOUND")
+          res.status(404).send("No user with that email");
+        else if (err === "NO_MATCH") res.status(401).send("Unauthorized!");
+        else res.status(500).send("Server issues");
+      });
+  } else {
+    res.status(400).send("Missing information");
+  }
+};
+
 module.exports = {
   getUsersController,
   getUserByIdController,
   insertNewUserController,
   updateUserController,
   deleteUserController,
+  userAuthenticationController,
 };

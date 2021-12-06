@@ -1,6 +1,8 @@
 const connection = require("../db-config");
 const db = connection.promise();
 
+const argon2 = require("argon2");
+
 connection.connect((err) => {
   if (err) {
     console.error("error connecting: " + err.stack);
@@ -9,8 +11,23 @@ connection.connect((err) => {
   }
 });
 
+const hashingOptions = {
+  type: argon2.argon2id,
+  memoryCost: 2 ** 16,
+  timeCost: 5,
+  parallelism: 1,
+};
+
+const hashPassword = (plainPassword) => {
+  return argon2.hash(plainPassword, hashingOptions);
+};
+
+const verifyPassword = (plainPassword, hashedPassword) => {
+  return argon2.verify(hashedPassword, plainPassword, hashingOptions);
+};
+
 const getUsers = ({ filters: { language } }) => {
-  let sql = "SELECT * FROM users";
+  let sql = "SELECT id, firstname, lastname, email, city, language FROM users";
   const sqlValues = [];
   if (language) {
     sql += " WHERE language = ?";
@@ -28,7 +45,10 @@ const getUsers = ({ filters: { language } }) => {
 
 const getUserById = (id) => {
   return db
-    .query("SELECT * FROM users WHERE id = ?", [id])
+    .query(
+      "SELECT firstname, lastname, email, city, language FROM users WHERE id = ?",
+      [id]
+    )
     .then(([results]) => results)
     .catch((err) => {
       console.log(err);
@@ -36,11 +56,18 @@ const getUserById = (id) => {
     });
 };
 
-const insertUser = (firstname, lastname, email, city, language) => {
+const insertUser = (
+  firstname,
+  lastname,
+  email,
+  city,
+  language,
+  hashedPassword
+) => {
   return db
     .query(
-      "INSERT INTO users (firstname, lastname, email, city, language ) VALUES (?, ?, ?, ?, ?);",
-      [firstname, lastname, email, city, language]
+      "INSERT INTO `users`(firstname, lastname, email, city, language, hashedPassword) VALUES (?, ?, ?, ?, ?, ?);",
+      [firstname, lastname, email, city, language, hashedPassword]
     )
     .then(([{ insertId }]) => insertId)
     .catch((err) => {
@@ -79,6 +106,19 @@ const deleteUser = (id) => {
     });
 };
 
+const getUserByEmail = (email) => {
+  return db
+    .query(
+      "SELECT firstname, lastname, city, language, hashedPassword FROM users WHERE email= ?;",
+      [email]
+    )
+    .then(([results]) => results)
+    .catch((err) => {
+      console.log(err);
+      return err;
+    });
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -86,4 +126,7 @@ module.exports = {
   validateEmail,
   updateUser,
   deleteUser,
+  hashPassword,
+  verifyPassword,
+  getUserByEmail,
 };
