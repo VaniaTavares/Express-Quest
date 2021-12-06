@@ -13,9 +13,4 @@ usersRouter.put("/:id", usersController.updateUserController);
 
 usersRouter.delete("/:id", usersController.deleteUserController);
 
-usersRouter.post(
-  "/api/auth/checkCredentials",
-  usersController.userAuthenticationController
-);
-
 module.exports = usersRouter;

@@ -9,11 +9,6 @@ setupRoutes(app);
 
 const port = process.env.PORT || 3000;
 
-app.post(
-  "/api/auth/checkCredentials",
-  usersController.userAuthenticationController
-);
-
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });

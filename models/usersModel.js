@@ -106,19 +106,6 @@ const deleteUser = (id) => {
     });
 };
 
-const getUserByEmail = (email) => {
-  return db
-    .query(
-      "SELECT firstname, lastname, city, language, hashedPassword FROM users WHERE email= ?;",
-      [email]
-    )
-    .then(([results]) => results)
-    .catch((err) => {
-      console.log(err);
-      return err;
-    });
-};
-
 module.exports = {
   getUsers,
   getUserById,
@@ -128,5 +115,4 @@ module.exports = {
   deleteUser,
   hashPassword,
   verifyPassword,
-  getUserByEmail,
 };

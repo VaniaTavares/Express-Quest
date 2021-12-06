@@ -159,45 +159,10 @@ const deleteUserController = (req, res) => {
     });
 };
 
-const userAuthenticationController = (req, res) => {
-  const { email, password } = req.body;
-
-  let retrieveHashedPassword;
-
-  if (email && password) {
-    usersModel
-      .getUserByEmail(email)
-      .then((users) => {
-        if (users.length === 0) return Promise.reject("RECORD_NOT_FOUND");
-        console.log(users[0]);
-        retrieveHashedPassword = users[0].hashedPassword;
-
-        return usersModel.verifyPassword(password, retrieveHashedPassword);
-      })
-      .then((passwordIsCorrect) => {
-        if (!passwordIsCorrect) return Promise.reject("NO_MATCH");
-        res
-          .status(200)
-          .send(
-            "there is a user with the same email and a matching password in DB"
-          );
-      })
-      .catch((err) => {
-        if (err === "RECORD_NOT_FOUND")
-          res.status(404).send("No user with that email");
-        else if (err === "NO_MATCH") res.status(401).send("Unauthorized!");
-        else res.status(500).send("Server issues");
-      });
-  } else {
-    res.status(400).send("Missing information");
-  }
-};
-
 module.exports = {
   getUsersController,
   getUserByIdController,
   insertNewUserController,
   updateUserController,
   deleteUserController,
-  userAuthenticationController,
 };
