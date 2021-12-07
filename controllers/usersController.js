@@ -23,7 +23,7 @@ const getUserByIdController = (req, res) => {
   usersModel
     .getUserById(userId)
     .then((user) => {
-      if (user.length) res.status(200).json(user);
+      if (user) res.status(200).json(user);
       else return Promise.reject("NO_USER");
     })
     .catch((err) => {
@@ -50,7 +50,10 @@ const insertNewUserController = (req, res) => {
       req.body.token = token;
       return usersModel.insertUser(req.body);
     })
-    .then((newUserId) => res.status(201).json(newUserId))
+    .then((newUserId) => {
+      res.cookie("user_token", newUserId[0]);
+      res.status(201).json(newUserId[1]);
+    })
     .catch((err) => {
       console.error(err);
       if (err === "DUPLICATE_EMAIL")

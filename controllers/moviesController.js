@@ -8,6 +8,7 @@ const allMoviesController = async (req, res) => {
   try {
     if (req.cookies.user_token) {
       let user = await usersModel.getUserByTokenAsync(req.cookies.user_token);
+      if (!user) res.status(401).send("Unauthorized");
       req.body.id = user.id;
     }
     const { max_duration, color } = req.query;

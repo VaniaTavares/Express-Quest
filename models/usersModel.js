@@ -62,45 +62,32 @@ const getUserById = (id) => {
       "SELECT firstname, lastname, email, city, language FROM users WHERE id = ?",
       [id]
     )
-    .then(([results]) => results[0])
+    .then(([results]) => {
+      return results[0];
+    })
     .catch((err) => {
       console.log(err);
       return err;
     });
 };
 
-const insertUser = ({
-  firstname,
-  lastname,
-  city,
-  language,
-  email,
-  password,
-  token,
-}) => {
-  let hashedPassword;
+const insertUser = ({ password, token, ...data }) => {
   return hashPassword(password)
-    .then((treatedPassword) => {
-      hashedPassword = treatedPassword;
+    .then((hashedPassword) => {
       return db.query("INSERT INTO `users` SET ?;", {
-        firstname,
-        lastname,
-        city,
-        language,
-        email,
         hashedPassword,
         token,
+        ...data,
       });
     })
     .then(([{ insertId }]) => {
-      return {
-        id: insertId,
-        firstname,
-        lastname,
-        email,
-        city,
-        language,
-      };
+      return [
+        token,
+        {
+          id: insertId,
+          ...data,
+        },
+      ];
     })
     .catch((err) => {
       console.log(err);
