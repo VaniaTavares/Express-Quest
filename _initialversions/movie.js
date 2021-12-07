@@ -218,3 +218,69 @@ movieRouter.delete("/:id", (req, res) => {
 });
 
 module.exports = movieRouter;
+
+//// PROMISE VERSION WITH TOKENS
+
+/*
+const allMoviesController = (req, res) => {
+  usersModel
+    .getUserByToken(req.cookies.user_token)
+    .then((user) => {
+      if (req.cookies.user_token && !user)
+        return Promise.reject("INVALID_TOKEN");
+      else if (req.cookies.user_token) return user.id;
+      else return;
+    })
+    .then((id) => {
+      req.body.id = id;
+      const { max_duration, color } = req.query;
+
+      return moviesModel.findMovies(
+        {
+          filters: { max_duration, color },
+        },
+        req.body.id
+      );
+    })
+    .then((movies) => {
+      if (movies && movies.length > 0) res.status(200).json(movies);
+      else return Promise.reject("NO_RECORD_FOUND");
+    })
+    .catch((err) => {
+      console.log(err);
+      if (err === "INVALID_TOKEN") res.status(401).send("Unauthorized");
+      else if (err === "NO_RECORD_FOUND")
+        res.status(404).send("No movies found with those specifications");
+      else res.status(500).send("Internal issues");
+    });
+};
+*/
+
+const newMovieController = (req, res) => {
+  let errors;
+  errors = moviesModel.validateMovies(req.body);
+  if (errors && errors.length)
+    res.status(422).json({ validationErrors: errors });
+  else {
+    usersModel
+      .getUserByToken(req.cookies.user_token)
+      .then((user) => {
+        if (!user) return Promise.reject("INVALID_TOKEN");
+        return user;
+      })
+      .then((user) => {
+        req.body.user_id = user.id;
+        return moviesModel.insertNewMovie(req.body);
+      })
+      .then((insertId) => {
+        delete req.body.user_id;
+        if (insertId) res.status(201).json({ id: insertId, ...req.body });
+        else return Promise.reject("ERROR");
+      })
+      .catch((err) => {
+        console.log(err);
+        if (err === "INVALID_TOKEN") res.status(401).send("Unauthorized!");
+        res.status(500).send("Error saving the movie");
+      });
+  }
+};
