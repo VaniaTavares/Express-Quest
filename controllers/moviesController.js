@@ -1,14 +1,31 @@
-const { moviesModel } = require("../models");
+const { moviesModel, usersModel } = require("../models");
 
 const allMoviesController = async (req, res) => {
-  const { max_duration, color } = req.query;
-  let movies = await moviesModel.findMovies({
-    filters: { max_duration, color },
-  });
-  if (movies.length > 0) res.status(200).json(movies);
-  else if (movies.length === 0)
-    res.status(404).send("No movies found with those specifications");
-  else res.status(500).send("No movies found");
+  console.log("Cookies: ", req.cookies);
+
+  // Cookies that have been signed
+  console.log("Signed Cookies: ", req.signedCookies);
+  try {
+    if (req.cookies.user_token) {
+      let user = await usersModel.getUserByTokenAsync(req.cookies.user_token);
+      req.body.id = user.id;
+    }
+    const { max_duration, color } = req.query;
+
+    let movies = await moviesModel.findMovies(
+      {
+        filters: { max_duration, color },
+      },
+      req.body.id
+    );
+
+    if (movies.length > 0) res.status(200).json(movies);
+    else if (movies.length === 0)
+      res.status(404).send("No movies found with those specifications");
+  } catch (err) {
+    console.log(err);
+    res.status(500).send("Internal issues");
+  }
 };
 
 const movieByIdController = async (req, res) => {
@@ -61,13 +78,11 @@ const newMovieController = async (req, res) => {
 
   if (errors.length) res.status(422).json({ validationErrors: errors });
   else {
-    let insertId = await moviesModel.insertNewMovie(
-      title,
-      director,
-      year,
-      color,
-      duration
-    );
+    let user = await usersModel.getUserByTokenAsync(req.cookies.user_token);
+    if (!user) res.status(401).send("Unauthorized!");
+    req.body.user_id = user.id;
+
+    let insertId = await moviesModel.insertNewMovie(req.body);
     if (insertId)
       res
         .status(201)

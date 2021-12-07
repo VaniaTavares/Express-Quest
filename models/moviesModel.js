@@ -9,21 +9,26 @@ connection.connect((err) => {
   }
 });
 
-const findMovies = async ({ filters: { color, max_duration } }) => {
-  let sql = "SELECT * FROM movies";
+const findMovies = async ({ filters: { color, max_duration } }, userId) => {
+  let sql = "SELECT id, title, director, year, color, duration FROM movies";
   const sqlFilter = [];
 
   if (color) {
-    sql += " WHERE color = ?";
+    sql += " WHERE color = ?;";
     sqlFilter.push(color);
   }
   if (max_duration) {
-    if (color) sql += " AND duration <= ?";
-    else sql += " WHERE duration <= ?";
+    if (color) sql += " AND duration <= ?;";
+    else sql += " WHERE duration <= ?;";
     sqlFilter.push(max_duration);
   }
 
-  console.log(sqlFilter);
+  if (userId) {
+    if (color || max_duration) sql += " AND user_id = ?;";
+    else sql += " WHERE user_id = ?;";
+    sqlFilter.push(userId);
+  }
+
   try {
     const rawResults = await db.query(sql, sqlFilter);
     const [results] = rawResults;
@@ -36,9 +41,10 @@ const findMovies = async ({ filters: { color, max_duration } }) => {
 
 const findMovieById = async (movieId) => {
   try {
-    const rawResults = await db.query("SELECT * FROM movies WHERE id = ?", [
-      movieId,
-    ]);
+    const rawResults = await db.query(
+      "SELECT title, director, year, color, duration FROM movies WHERE id = ?",
+      [movieId]
+    );
     const [results] = rawResults;
     return results;
   } catch (error) {
@@ -47,12 +53,9 @@ const findMovieById = async (movieId) => {
   }
 };
 
-const insertNewMovie = async (title, director, year, color, duration) => {
+const insertNewMovie = async (body) => {
   try {
-    const rawResult = await db.query(
-      "INSERT INTO movies(title, director, year, color, duration) VALUES (?, ?, ?, ?, ?)",
-      [title, director, year, color, duration]
-    );
+    const rawResult = await db.query("INSERT INTO movies SET ?;", body);
     const [{ insertId }] = rawResult;
     return insertId;
   } catch (error) {

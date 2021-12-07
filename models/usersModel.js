@@ -78,7 +78,6 @@ const insertUser = ({
   password,
   token,
 }) => {
-  console.log(token, "*++++++++++++++++++++++++");
   let hashedPassword;
   return hashPassword(password)
     .then((treatedPassword) => {
@@ -139,6 +138,29 @@ const deleteUser = (id) => {
     });
 };
 
+const getUserByToken = (token) => {
+  return db
+    .query("SELECT id, token FROM users WHERE token = ?", [token])
+    .then(([results]) => results[0])
+    .catch((err) => {
+      console.log(err);
+      return err;
+    });
+};
+
+const getUserByTokenAsync = async (token) => {
+  try {
+    let [results] = await db.query(
+      "SELECT id, token FROM users WHERE token = ?",
+      [token]
+    );
+    return results[0];
+  } catch (err) {
+    console.log(err);
+    return err;
+  }
+};
+
 module.exports = {
   getUsers,
   getUserById,
@@ -149,4 +171,6 @@ module.exports = {
   hashPassword,
   verifyPassword,
   validateUser,
+  getUserByToken,
+  getUserByTokenAsync,
 };

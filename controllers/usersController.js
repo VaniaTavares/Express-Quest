@@ -40,7 +40,7 @@ const insertNewUserController = (req, res) => {
   usersModel
     .validateEmail(req.body.email)
     .then((result) => {
-      if (result[0]) return Promise.reject("DUPLICATE_EMAIL");
+      if (result) return Promise.reject("DUPLICATE_EMAIL");
       validationErrors = usersModel.validateUser(req.body);
       if (validationErrors) return Promise.reject("INVALID_DATA");
 
