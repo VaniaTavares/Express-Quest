@@ -64,13 +64,11 @@ const getTestUsers = async () => {
 const createTest = async ({ password, email, ...data }) => {
   try {
     const hashedPassword = await hashPassword(password, 10);
-    const token = userHelper.calculateToken(email);
 
     const rawResults = await db.query("INSERT INTO `registrations` SET ?;", {
       hashedPassword,
       email,
       ...data,
-      token,
     });
     const [{ insertId }] = rawResults;
     return { id: insertId, email, ...data };

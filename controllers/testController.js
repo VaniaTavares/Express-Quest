@@ -1,4 +1,5 @@
 const { testModel } = require("../models");
+const { testHelper } = require("../helpers");
 
 const getAllTests = async (req, res) => {
   try {
@@ -34,15 +35,22 @@ const testLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
     user = await testModel.getTestByEmail(email);
-    if (!user) throw new Error("NO_USER");
+    if (!user) res.status(400).send("User doesn't exist!");
     else {
-      const matched = testModel.verifyPassword(password, user);
-      if (!matched) throw new Error("NO_USER");
-      else res.status(200).json("login");
+      const matched = await testModel.verifyPassword(password, user);
+      if (!matched) res.status(401).send("Invalid credentials");
+      else {
+        const accessToken = testHelper.createTokens(user);
+        res.cookie("accessToken", accessToken, {
+          maxAge: 1296000000,
+          httpOnly: true,
+        });
+        res.status(200).json("login");
+      }
     }
   } catch (err) {
-    if ("NO_USER") res.status(401).send("Invalid credentials");
-    else res.status(500).send("Internal Issues");
+    console.log(err);
+    res.status(500).send("Internal Issues");
   }
 };
 
