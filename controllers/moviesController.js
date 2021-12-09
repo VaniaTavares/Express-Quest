@@ -1,23 +1,14 @@
 const { moviesModel, usersModel } = require("../models");
 
 const allMoviesController = async (req, res) => {
-  console.log("Cookies: ", req.cookies);
+  const { max_duration, color } = req.query;
 
-  // Cookies that have been signed
-  console.log("Signed Cookies: ", req.signedCookies);
   try {
-    if (req.cookies.user_token) {
-      let user = await usersModel.getUserByTokenAsync(req.cookies.user_token);
-      if (!user) throw new Error("INVALID_CREDENTIALS");
-      req.body.id = user.id;
-    }
-    const { max_duration, color } = req.query;
-
     let movies = await moviesModel.findMovies(
       {
         filters: { max_duration, color },
       },
-      req.body.id
+      req.user_id
     );
 
     if (movies.length === 0) throw new Error("NO_RECORD_FOUND");
@@ -25,8 +16,7 @@ const allMoviesController = async (req, res) => {
     res.status(200).json(movies);
   } catch (err) {
     console.log(err);
-    if ("INVALID_CREDENTIALS") res.status(401).send("Unauthorized");
-    else if (NO_RECORD_FOUND)
+    if ("NO_RECORD_FOUND")
       res.status(404).send("No movies found with those specifications");
     res.status(500).send("Internal issues");
   }
@@ -52,12 +42,8 @@ const newMovieController = async (req, res) => {
     errors = moviesModel.validateMovies(req.body);
     if (errors && errors.length) throw new Error("INVALID_DATA");
 
-    let user = await usersModel.getUserByTokenAsync(req.cookies.user_token);
-    if (!user) throw new Error("NO_USER_FOUND");
-    req.body.user_id = user.id;
+    let insertId = await moviesModel.insertNewMovie(req.body, req.user_id);
 
-    let insertId = await moviesModel.insertNewMovie(req.body);
-    delete req.body.user_id;
     if (insertId) res.status(201).json({ id: insertId, ...req.body });
   } catch (err) {
     console.log(err);

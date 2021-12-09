@@ -3,9 +3,6 @@ const authRouter = express.Router();
 
 const { authController } = require("../controllers");
 
-authRouter.post(
-  "/checkCredentials",
-  authController.userAuthenticationController
-);
+authRouter.post("/sessions", authController.userAuthenticationController);
 
 module.exports = authRouter;

@@ -35,7 +35,7 @@ const getUserByIdController = (req, res) => {
 };
 
 const insertNewUserController = (req, res) => {
-  let validationErrors;
+  let validationErrors, newUser;
 
   usersModel
     .validateEmail(req.body.email)
@@ -44,15 +44,18 @@ const insertNewUserController = (req, res) => {
       validationErrors = usersModel.validateUser(req.body);
       if (validationErrors) return Promise.reject("INVALID_DATA");
 
-      return userHelper.calculateToken(req.body.email);
-    })
-    .then((token) => {
-      req.body.token = token;
       return usersModel.insertUser(req.body);
     })
     .then((newUserId) => {
-      res.cookie("user_token", newUserId[0]);
-      res.status(201).json(newUserId[1]);
+      newUser = newUserId;
+      return userHelper.calculateToken(req.body.email, newUser.id);
+    })
+    .then((token) => {
+      res.cookie("user_token", token, {
+        maxAge: 1296000000,
+        httpOnly: true,
+      });
+      res.status(201).json(newUser);
     })
     .catch((err) => {
       console.error(err);

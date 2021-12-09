@@ -122,9 +122,12 @@ const findMovieById = async (movieId) => {
   }
 };
 
-const insertNewMovie = async (body) => {
+const insertNewMovie = async (body, user_id) => {
   try {
-    const rawResult = await db.query("INSERT INTO movies SET ?;", body);
+    const rawResult = await db.query("INSERT INTO movies SET ?;", [
+      body,
+      user_id,
+    ]);
     const [{ insertId }] = rawResult;
     return insertId;
   } catch (error) {

@@ -1,13 +1,22 @@
 const express = require("express");
 const { moviesController } = require("../controllers");
+const { userHelper } = require("../helpers");
 
 const moviesRouter = express.Router();
 
-moviesRouter.get("/", moviesController.allMoviesController);
+moviesRouter.get(
+  "/",
+  userHelper.validateUserToken,
+  moviesController.allMoviesController
+);
 
 moviesRouter.get("/:id", moviesController.movieByIdController);
 
-moviesRouter.post("/", moviesController.newMovieController);
+moviesRouter.post(
+  "/",
+  userHelper.validateUserToken,
+  moviesController.newMovieController
+);
 
 moviesRouter.put("/:id", moviesController.updateMovieController);
 

@@ -10,7 +10,8 @@ testRouter.post("/register", testController.newTest);
 testRouter.post("/login", testController.testLogin);
 
 testRouter.get("/profile", testHelper.validateToken, (req, res) => {
-  res.json("profile");
+  const username = req.username;
+  res.json({ Welcome: username });
 });
 
 module.exports = testRouter;

@@ -71,23 +71,16 @@ const getUserById = (id) => {
     });
 };
 
-const insertUser = ({ password, token, ...data }) => {
+const insertUser = ({ password, ...data }) => {
   return hashPassword(password)
     .then((hashedPassword) => {
       return db.query("INSERT INTO `users` SET ?;", {
         hashedPassword,
-        token,
         ...data,
       });
     })
     .then(([{ insertId }]) => {
-      return [
-        token,
-        {
-          id: insertId,
-          ...data,
-        },
-      ];
+      return { id: insertId, ...data };
     })
     .catch((err) => {
       console.log(err);

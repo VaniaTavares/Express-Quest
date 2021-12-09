@@ -1,4 +1,5 @@
 const { sign, verify } = require("jsonwebtoken");
+const jwt_decode = require("jwt-decode");
 
 const JWT_KEY = process.env.JWT_KEY;
 
@@ -10,13 +11,17 @@ const createTokens = (user) => {
 };
 
 const validateToken = async (req, res, next) => {
-  console.log(req.cookies);
   const accessToken = req.cookies.accessToken;
   if (!accessToken)
     return res.status(400).json({ error: "User not authenticated" });
   try {
     const validToken = verify(accessToken, JWT_KEY);
     if (validToken) {
+      let { username, id } = jwt_decode(accessToken);
+
+      console.log(id, username);
+      req.username = username;
+      req.id = id;
       req.authenticated = true;
       return next();
     }

@@ -16,9 +16,11 @@ const userAuthenticationController = (req, res) => {
       .then((passwordIsCorrect) => {
         if (!passwordIsCorrect) return Promise.reject("NO_MATCH");
 
-        const token = userHelper.calculateToken(email);
-        usersModel.updateUser({ token: token }, id);
-        res.cookie("user_token", token);
+        const token = userHelper.calculateToken(email, id);
+        res.cookie("user_token", token, {
+          maxAge: 1296000000,
+          httpOnly: true,
+        });
         res.send();
       })
       .catch((err) => {
