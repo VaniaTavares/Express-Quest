@@ -98,9 +98,14 @@ const validateEmail = (email) => {
     });
 };
 
-const updateUser = (body, id) => {
-  return db
-    .query("UPDATE users SET ? WHERE id = ?", [body, id])
+const updateUser = ({ password, ...data }, id) => {
+  return hashPassword(password)
+    .then((hashedPassword) => {
+      return db.query("UPDATE users SET ? WHERE id = ?", [
+        { hashedPassword, ...data },
+        id,
+      ]);
+    })
     .then(([results]) => results.changedRows)
     .catch((err) => {
       console.log(err);

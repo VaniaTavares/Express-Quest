@@ -17,11 +17,9 @@ const userAuthenticationController = (req, res) => {
         if (!passwordIsCorrect) return Promise.reject("NO_MATCH");
 
         const token = userHelper.calculateToken(email, id);
-        res.cookie("user_token", token, {
-          maxAge: 1296000000,
-          httpOnly: true,
-        });
-        res.send();
+
+        res.cookie("user_token", token, { httpOnly: true });
+        res.redirect("/api/movies");
       })
       .catch((err) => {
         console.log(err);

@@ -1,4 +1,4 @@
-const { moviesModel, usersModel } = require("../models");
+const { moviesModel } = require("../models");
 
 const allMoviesController = async (req, res) => {
   const { max_duration, color } = req.query;

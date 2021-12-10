@@ -85,15 +85,14 @@ const updateUserController = (req, res) => {
       validationErrors = usersModel.validateUser(req.body, false);
       if (validationErrors) return Promise.reject("INVALID_DATA");
 
-      if (newEmail) return userHelper.calculateToken(newEmail);
-      else return userHelper.calculateToken(existingUser.email);
+      if (newEmail) return userHelper.calculateToken(newEmail, userId);
+      else return userHelper.calculateToken(existingUser.email, userId);
     })
-    .then((token) => {
-      req.body.token = token;
+    .then(() => {
       return usersModel.updateUser(req.body, userId);
     })
     .then((user) => {
-      delete req.body.token;
+      delete req.body.password;
       if (user === 1) res.status(200).json({ ...existingUser, ...req.body });
       else return Promise.reject("NO_UPDATE");
     })
