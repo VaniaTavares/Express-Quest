@@ -1,4 +1,4 @@
-This repo is used for Wild Code School Express quests
+This repo is a clone Wild Code School Express quests
 
 # Setup
 
@@ -30,3 +30,6 @@ If you don't need automatic reloadings, you can just :
 npm start
 ```
 
+### Notes
+MVC folder has unfinished process without authentication.
+### PS: verify is safer than decode, because it returns the payload only when the secret/private_key is provided
