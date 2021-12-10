@@ -30,3 +30,5 @@ If you don't need automatic reloadings, you can just :
 npm start
 ```
 
+### Notes
+MVC folder has unfinished process without authentication.
