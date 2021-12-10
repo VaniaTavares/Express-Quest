@@ -33,3 +33,5 @@ npm start
 ### Notes
 MVC folder has unfinished process without authentication.
 ### PS: verify is safer than decode, because it returns the payload only when the secret/private_key is provided
+#### PPS:
+test files, are side-work learning JWT with bcrypt
